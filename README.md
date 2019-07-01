@@ -1,4 +1,5 @@
 # vue-sketch
+![Sketch](https://github.com/huliang56/vue-sketch/public/screenshot.png)
 
 ## Project setup
 ```
