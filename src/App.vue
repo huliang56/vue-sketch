@@ -1,28 +1,27 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+    <h1 class="sketch-title">Sketch</h1>
+    <Sketch/>
   </div>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
+import Sketch from './components/Sketch.vue'
 
 export default {
-  name: "app",
+  name: 'app',
   components: {
-    HelloWorld
-  }
-};
+    Sketch,
+  },
+}
 </script>
 
 <style>
-#app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.sketch-title {
+  position: absolute;
+  z-index: 9;
+  width: 100%;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  pointer-events: none;
 }
 </style>
