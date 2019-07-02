@@ -17,14 +17,15 @@
       <button :class="{ active: currentTool === 'Clear' }" @click="changeTool('Clear')">Clear</button>
       <button :class="{ active: currentTool === 'Undo' }" @click="changeTool('Undo')">Undo</button>
       <button :class="{ active: currentTool === 'Redo' }" @click="changeTool('Redo')">Redo</button>
-      <hr>
+      <hr />
       <button @click="toJson">toJson</button>
     </div>
   </div>
 </template>
 
 <script>
-import _ from 'lodash'
+import throttle from 'lodash/throttle'
+import debounce from 'lodash/debounce'
 import { fabric } from 'fabric'
 import { mapState, mapActions, mapGetters } from 'vuex'
 export default {
@@ -36,22 +37,21 @@ export default {
       brushColor: '#E34F51',
       startPos: {},
       endPos: {},
-      redoList: [],
-      clearRedo: false,
       textBox: null,
       currentObject: null,
       isDrawing: false,
+      isLoading: false,
     }
   },
   mounted() {
     this.init()
   },
   computed: {
-    ...mapState(['currentTool']),
+    ...mapState(['currentTool', 'present']),
     ...mapGetters(['isFreeMode']),
   },
   methods: {
-    ...mapActions(['updateTool']),
+    ...mapActions(['updateTool', 'saveObjects', 'loadPrev', 'loadNext']),
 
     init: async function() {
       // await this.$nextTick();
@@ -74,22 +74,21 @@ export default {
         'mouse:move': this.onMouseMove,
         'mouse:up': this.onMouseUp,
         'object:added': () => {
-          !this.clearRedo && (this.redoList = [])
-          this.clearRedo = false
+          // 添加新对象后，缓存当前画板中的所有对象
+          !this.isLoading && this.saveObjects(this.canvas.toJSON())
         },
       })
 
       this.setSketchSize()
-      window.addEventListener(
-        'resize',
-        _.throttle(this.setSketchSize, 50),
-        false
-      )
+      window.addEventListener('resize', throttle(this.setSketchSize, 50), false)
       window.addEventListener(
         'message',
-        _.debounce(this.receiveMessage, 50),
+        debounce(this.receiveMessage, 50),
         false
       )
+
+      // 初始化加载原数据
+      this.loadSketch()
 
       console.log('initSketch', this.canvas)
       // window.canvas = this.canvas
@@ -296,16 +295,11 @@ export default {
         this.canvas.on('path:created', this.onEraserDone)
       }
       if (this.currentTool === 'Undo') {
-        if (this.canvas._objects.length > 0) {
-          this.redoList.push(this.canvas._objects.pop())
-          this.canvas.renderAll()
-        }
+        this.loadPrev()
+        this.loadSketch()
       } else if (this.currentTool === 'Redo') {
-        if (this.redoList.length > 0) {
-          this.clearRedo = true
-          this.canvas.add(this.redoList.pop())
-          this.canvas.renderAll()
-        }
+        this.loadNext()
+        this.loadSketch()
       }
       this.currentTool === 'Clear' && this.canvas.clear()
 
@@ -313,6 +307,18 @@ export default {
 
       console.log('changeTool: ', this.currentTool)
       this.sendButtonEvent()
+    },
+    loadSketch() {
+      if (this.present) {
+        this.isLoading = true
+        this.canvas.loadFromJSON(this.present, () => {
+          this.isLoading = false
+          this.canvas.renderAll()
+        })
+      } else {
+        // 原数据不存在，默认保存一次
+        this.saveObjects(this.canvas.toJSON())
+      }
     },
     setSketchSize() {
       this.canvas.setDimensions({
@@ -359,7 +365,7 @@ export default {
         )
     },
   },
-  destroyed() {
+  beforeDestroy() {
     window.removeEventListener('resize', this.setSketchSize, false)
   },
 }
