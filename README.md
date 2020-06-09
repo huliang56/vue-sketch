@@ -1,5 +1,5 @@
 # vue-sketch
-![Sketch](https://raw.githubusercontent.com/huliang56/vue-sketch/master/public/screenshot.png)
+![Sketch](https://huliang56.github.io/vue-sketch/public/screenshot.png)
 
 ## Project setup
 ```
